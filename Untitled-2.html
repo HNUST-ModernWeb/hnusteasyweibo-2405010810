@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>微博 · 随时随地发现新鲜事</title>
+  <!-- 字体图标 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Vue Router -->
+  <script src="https://unpkg.com/vue-router@4"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; color: #333; }
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+    
+    /* 头部 - 微博风格橙色渐变 */
+    .app-header { 
+      background: linear-gradient(135deg, #ff8200 0%, #ff9a2e 100%); 
+      color: white; 
+      padding: 12px 16px; 
+      position: sticky; 
+      top: 0; 
+      z-index: 100; 
+      box-shadow: 0 2px 10px rgba(255, 130, 0, 0.2); 
+    }
+    .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .app-title { 
+      font-size: 1.6rem; 
+      font-weight: bold; 
+      cursor: pointer; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+    }
+    .app-title i { 
+      font-size: 1.5rem; 
+    }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .icon-btn { background: rgba(255,255,255,0.25); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+    .icon-btn:hover { background: rgba(255,255,255,0.35); }
+    .text-btn { background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.3s; }
+    .text-btn:hover { background: rgba(255,255,255,0.35); }
+    
+    /* 主内容 */
+    .app-main { flex: 1; max-width: 600px; margin: 0 auto; width: 100%; padding: 16px; padding-bottom: 80px; }
+    
+    /* 底部导航 - 微博风格 */
+    .app-tabbar { 
+      position: fixed; 
+      bottom: 0; 
+      left: 0; 
+      right: 0; 
+      background: white; 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 8px 0; 
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05); 
+      max-width: 600px; 
+      margin: 0 auto; 
+      border-top: 1px solid #eee;
+    }
+    .tab-item { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      gap: 4px; 
+      color: #999; 
+      text-decoration: none; 
+      font-size: 0.75rem; 
+      padding: 4px 20px; 
+      border-radius: 20px; 
+      transition: all 0.3s;
+    }
+    .tab-item i { font-size: 1.4rem; }
+    .tab-item.active { color: #ff8200; }
+    .tab-item:hover { color: #ff8200; }
+    
+    /* 卡片 */
+    .card { 
+      background: white; 
+      border-radius: 12px; 
+      padding: 20px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); 
+      margin-bottom: 12px; 
+      border: 1px solid #f0f0f0;
+    }
+    
+    /* 按钮 */
+    .btn { padding: 12px 24px; border: none; border-radius: 24px; font-size: 1rem; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+    .btn-primary { 
+      background: linear-gradient(135deg, #ff8200 0%, #ff9a2e 100%); 
+      color: white; 
+    }
+    .btn-primary:hover { 
+      box-shadow: 0 4px 12px rgba(255, 130, 0, 0.3); 
+      transform: translateY(-1px);
+    }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-outline { background: transparent; border: 1px solid #ddd; color: #666; }
+    .btn-outline:hover { border-color: #ff8200; color: #ff8200; }
+    
+    /* 表单 */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+    .form-input { 
+      width: 100%; 
+      padding: 12px 16px; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 12px; 
+      font-size: 1rem; 
+      transition: all 0.3s;
+    }
+    .form-input:focus { 
+      outline: none; 
+      border-color: #ff8200; 
+      box-shadow: 0 0 0 3px rgba(255, 130, 0, 0.1); 
+    }
+    textarea.form-input { resize: vertical; min-height: 120px; }
+    
+    /* 帖子卡片 */
+    .post-card { 
+      padding: 0; 
+      overflow: hidden; 
+      transition: all 0.2s;
+    }
+    .post-card:hover { 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+    }
+    .post-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 12px; }
+    .post-author { display: flex; align-items: center; gap: 12px; }
+    .avatar { 
+      width: 44px; 
+      height: 44px; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: white; 
+      font-weight: bold; 
+      font-size: 1.2rem; 
+      background: linear-gradient(135deg, #ff8200, #ff9a2e);
+    }
+    .author-name { 
+      font-size: 1rem; 
+      font-weight: 600; 
+      color: #333;
+    }
+    .post-time { font-size: 0.75rem; color: #999; }
+    .post-content { padding: 0 16px 16px; }
+    .content-text { 
+      font-size: 1rem; 
+      line-height: 1.6; 
+      margin-bottom: 12px; 
+      word-break: break-word; 
+      color: #222;
+    }
+    .post-images { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0; }
+    .post-images img { 
+      width: 100%; 
+      aspect-ratio: 1; 
+      object-fit: cover; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      transition: transform 0.2s;
+    }
+    .post-images img:hover { transform: scale(1.02); }
+    .post-footer { 
+      display: flex; 
+      justify-content: space-around; 
+      padding: 12px 16px; 
+      border-top: 1px solid #f0f0f0; 
+      background: #fafafa;
+    }
+    .action-btn { 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+      background: none; 
+      border: none; 
+      color: #666; 
+      cursor: pointer; 
+      padding: 8px 20px; 
+      border-radius: 20px; 
+      transition: all 0.2s;
+    }
+    .action-btn:hover { background: #fff5eb; color: #ff8200; }
+    .action-btn.liked { color: #ff3b30; }
+    
+    /* Toast */
+    .toast { 
+      position: fixed; 
+      top: 80px; 
+      left: 50%; 
+      transform: translateX(-50%); 
+      padding: 12px 24px; 
+      border-radius: 30px; 
+      color: white; 
+      z-index: 1000; 
+      animation: slideDown 0.3s; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .toast.success { background: #52c41a; }
+    .toast.error { background: #ff4d4f; }
+    .toast.info { background: #1890ff; }
+    .toast.warning { background: #faad14; }
+    @keyframes slideDown { 
+      from { opacity: 0; transform: translate(-50%, -20px); } 
+      to { opacity: 1; transform: translate(-50%, 0); } 
+    }
+    
+    /* 模态框 */
+    .modal-overlay { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0; 
+      background: rgba(0,0,0,0.5); 
+      display: flex; 
+      align-items: flex-end; 
+      justify-content: center; 
+      z-index: 200; 
+    }
+    @media (min-width: 640px) {
+      .modal-overlay { align-items: center; }
+    }
+    .modal-content { 
+      background: white; 
+      width: 100%; 
+      max-width: 500px; 
+      max-height: 80vh; 
+      border-radius: 20px 20px 0 0; 
+      display: flex; 
+      flex-direction: column; 
+      animation: slideUp 0.3s; 
+    }
+    @media (min-width: 640px) {
+      .modal-content { border-radius: 20px; max-height: 70vh; }
+    }
+    @keyframes slideUp { 
+      from { transform: translateY(100%); } 
+      to { transform: translateY(0); } 
+    }
+    .modal-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+      padding: 16px 20px; 
+      border-bottom: 1px solid #eee; 
+    }
+    .modal-header h3 { font-size: 1.2rem; color: #333; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .modal-footer { display: flex; gap: 12px; padding: 16px 20px; border-top: 1px solid #eee; background: white; }
+    .comment-input { 
+      flex: 1; 
+      padding: 12px 16px; 
+      border: 1px solid #e0e0e0; 
+      border-radius: 24px; 
+      font-size: 0.95rem;
+      transition: all 0.3s;
+    }
+    .comment-input:focus { outline: none; border-color: #ff8200; }
+    .send-btn { 
+      width: 48px; 
+      height: 48px; 
+      border-radius: 50%; 
+      background: linear-gradient(135deg, #ff8200, #ff9a2e); 
+      border: none; 
+      color: white; 
+      cursor: pointer; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .send-btn:hover:not(:disabled) { 
+      transform: scale(1.05); 
+      box-shadow: 0 4px 12px rgba(255, 130, 0, 0.4); 
+    }
+    .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* 其他 */
+    .loading { text-align: center; padding: 40px; color: #999; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+    .empty-state i { font-size: 3.5rem; margin-bottom: 16px; opacity: 0.4; }
+    .feed-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .feed-header h2 { 
+      font-size: 1.3rem; 
+      color: #333; 
+      font-weight: 600;
+    }
+    .image-preview-area { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .image-preview { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; }
+    .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .remove-image { 
+      position: absolute; 
+      top: 4px; 
+      right: 4px; 
+      width: 22px; 
+      height: 22px; 
+      border-radius: 50%; 
+      background: rgba(0,0,0,0.6); 
+      border: none; 
+      color: white; 
+      cursor: pointer; 
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .remove-image:hover { background: rgba(255, 59, 48, 0.9); }
+    
+    /* 登录页面 - 微博风格 */
+    .login-view { 
+      min-height: 100vh; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 20px; 
+      background: linear-gradient(135deg, #ff8200 0%, #ff9a2e 100%); 
+    }
+    .login-container { width: 100%; max-width: 400px; }
+    .login-header { text-align: center; color: white; margin-bottom: 30px; }
+    .login-header i { font-size: 3.5rem; margin-bottom: 10px; }
+    .login-header h1 { font-size: 2.8rem; font-weight: bold; }
+    .login-header p { opacity: 0.95; font-size: 0.95rem; }
+    .login-card { padding: 30px; border-radius: 16px; }
+    .tabs { 
+      display: flex; 
+      gap: 10px; 
+      margin-bottom: 30px; 
+      border-bottom: 1px solid #eee; 
+      padding-bottom: 10px; 
+    }
+    .tab { 
+      flex: 1; 
+      padding: 10px; 
+      background: none; 
+      border: none; 
+      color: #999; 
+      cursor: pointer; 
+      font-size: 1rem;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .tab.active { color: #ff8200; font-weight: 600; }
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -11px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #ff8200;
+      border-radius: 3px 3px 0 0;
+    }
+    
+    /* 个人主页 */
+    .profile-header { text-align: center; padding: 30px 20px; }
+    .avatar-large { 
+      width: 100px; 
+      height: 100px; 
+      border-radius: 50%; 
+      margin: 0 auto 16px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: white; 
+      font-size: 2.5rem; 
+      background: linear-gradient(135deg, #ff8200, #ff9a2e);
+      box-shadow: 0 4px 12px rgba(255, 130, 0, 0.3);
+    }
+    .profile-stats { display: flex; justify-content: center; gap: 40px; margin-top: 20px; }
+    .stat-item { text-align: center; cursor: pointer; }
+    .stat-value { font-size: 1.5rem; font-weight: bold; color: #ff8200; }
+    .stat-label { font-size: 0.85rem; color: #999; }
+    
+    /* 微博特有元素 */
+    .weibo-badge {
+      background: linear-gradient(135deg, #ff8200, #ff3b30);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    
+    /* 刷新按钮 */
+    .refresh-btn {
+      background: white;
+      border: 1px solid #f0f0f0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      color: #ff8200;
+      font-size: 1.1rem;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .refresh-btn:hover {
+      background: #ff8200;
+      color: white;
+      border-color: #ff8200;
+      transform: rotate(180deg);
+    }
+    
+    /* 发布按钮悬浮效果 */
+    .publish-fab {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff8200, #ff9a2e);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 16px rgba(255, 130, 0, 0.4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      transition: all 0.3s;
+      z-index: 99;
+    }
+    .publish-fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(255, 130, 0, 0.5);
+    }
+    @media (min-width: 640px) {
+      .publish-fab { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted, inject, provide } = Vue;
+    const { createRouter, createWebHashHistory } = VueRouter;
+
+    // ==================== 模拟数据存储 ====================
+    const Storage = {
+      init() {
+        if (!localStorage.getItem('weibo_users')) {
+          localStorage.setItem('weibo_users', JSON.stringify([
+            { id: 1, username: '微博小助手', password: '123456', avatar: null, bio: '微博官方账号', createdAt: new Date().toISOString() },
+            { id: 2, username: '科技观察', password: '123456', avatar: null, bio: '分享科技资讯', createdAt: new Date().toISOString() },
+            { id: 3, username: '美食博主', password: '123456', avatar: null, bio: '吃货一枚', createdAt: new Date().toISOString() },
+            { id: 4, username: 'test', password: '123456', avatar: null, bio: '测试账号', createdAt: new Date().toISOString() }
+          ]));
+        }
+        if (!localStorage.getItem('weibo_posts')) {
+          localStorage.setItem('weibo_posts', JSON.stringify([
+            { id: 1, userId: 1, content: '🎉 欢迎来到微博！在这里，你可以随时随地分享新鲜事。快来发布你的第一条微博吧！ #微博上线#', images: [], likeCount: 128, commentCount: 32, repostCount: 15, createdAt: new Date(Date.now() - 1800000).toISOString() },
+            { id: 2, userId: 2, content: '🚀 最新科技动态：AI技术又有了新突破！ChatGPT、Claude等大模型正在改变我们的生活方式。你们平时会使用AI助手吗？', images: ['https://picsum.photos/400/400?random=10'], likeCount: 89, commentCount: 23, repostCount: 8, createdAt: new Date(Date.now() - 7200000).toISOString() },
+            { id: 3, userId: 3, content: '🍜 今天打卡了一家超赞的川菜馆！麻婆豆腐绝了！大家有什么推荐的美食吗？', images: ['https://picsum.photos/400/400?random=11', 'https://picsum.photos/400/400?random=12', 'https://picsum.photos/400/400?random=13'], likeCount: 256, commentCount: 45, repostCount: 28, createdAt: new Date(Date.now() - 14400000).toISOString() },
+            { id: 4, userId: 1, content: '📱 微博新版本上线啦！优化了用户体验，新增了表情包功能。大家快去更新试试吧！', images: [], likeCount: 67, commentCount: 12, repostCount: 5, createdAt: new Date(Date.now() - 86400000).toISOString() }
+          ]));
+        }
+        if (!localStorage.getItem('weibo_comments')) {
+          localStorage.setItem('weibo_comments', JSON.stringify([
+            { id: 1, postId: 1, userId: 2, content: '期待已久！终于上线了🎉', createdAt: new Date(Date.now() - 900000).toISOString() },
+            { id: 2, postId: 1, userId: 3, content: '界面很好看，支持！', createdAt: new Date(Date.now() - 600000).toISOString() },
+            { id: 3, postId: 2, userId: 1, content: '我经常用AI写文案，效率超高！', createdAt: new Date(Date.now() - 3600000).toISOString() },
+            { id: 4, postId: 3, userId: 2, content: '看起来好好吃！求地址', createdAt: new Date(Date.now() - 7200000).toISOString() }
+          ]));
+        }
+        if (!localStorage.getItem('weibo_likes')) {
+          localStorage.setItem('weibo_likes', JSON.stringify([]));
+        }
+      },
+      getUsers() { return JSON.parse(localStorage.getItem('weibo_users') || '[]'); },
+      getPosts() { return JSON.parse(localStorage.getItem('weibo_posts') || '[]'); },
+      getComments() { return JSON.parse(localStorage.getItem('weibo_comments') || '[]'); },
+      getLikes() { return JSON.parse(localStorage.getItem('weibo_likes') || '[]'); },
+      saveUsers(users) { localStorage.setItem('weibo_users', JSON.stringify(users)); },
+      savePosts(posts) { localStorage.setItem('weibo_posts', JSON.stringify(posts)); },
+      saveComments(comments) { localStorage.setItem('weibo_comments', JSON.stringify(comments)); },
+      saveLikes(likes) { localStorage.setItem('weibo_likes', JSON.stringify(likes)); }
+    };
+    Storage.init();
+
+    // ==================== 全局状态 ====================
+    const globalState = reactive({
+      currentUser: JSON.parse(localStorage.getItem('weibo_currentUser') || 'null'),
+      token: localStorage.getItem('weibo_token') || null,
+      toast: { show: false, message: '', type: 'info' }
+    });
+
+    function showToast(message, type = 'info') {
+      globalState.toast = { show: true, message, type };
+      setTimeout(() => { globalState.toast.show = false; }, 2500);
+    }
+
+    function login(user, token) {
+      globalState.currentUser = user;
+      globalState.token = token;
+      localStorage.setItem('weibo_currentUser', JSON.stringify(user));
+      localStorage.setItem('weibo_token', token);
+    }
+
+    function logout() {
+      globalState.currentUser = null;
+      globalState.token = null;
+      localStorage.removeItem('weibo_currentUser');
+      localStorage.removeItem('weibo_token');
+    }
+
+    // ==================== 主应用组件 ====================
+    const App = {
+      setup() {
+        provide('showToast', showToast);
+        provide('globalState', globalState);
+        
+        const handleLogout = () => {
+          logout();
+          showToast('已退出微博', 'info');
+          router.push('/login');
+        };
+
+        return { globalState, handleLogout };
+      },
+      template: `
+        <div class="app">
+          <header class="app-header">
+            <div class="header-content">
+              <h1 class="app-title" @click="$router.push('/')">
+                <i class="fab fa-weibo"></i> 微博
+              </h1>
+              <div class="header-actions">
+                <template v-if="globalState.currentUser">
+                  <span style="font-size:0.9rem;opacity:0.95">Hi, {{ globalState.currentUser.username }}</span>
+                  <button class="icon-btn" @click="$router.push('/profile')"><i class="fas fa-user"></i></button>
+                  <button class="icon-btn" @click="handleLogout"><i class="fas fa-sign-out-alt"></i></button>
+                </template>
+                <template v-else>
+                  <button class="text-btn" @click="$router.push('/login')">登录</button>
+                  <button class="text-btn" @click="$router.push('/login')">注册</button>
+                </template>
+              </div>
+            </div>
+          </header>
+          <main class="app-main">
+            <router-view></router-view>
+          </main>
+          <nav class="app-tabbar" v-if="globalState.currentUser">
+            <router-link to="/home" class="tab-item"><i class="fas fa-home"></i><span>首页</span></router-link>
+            <router-link to="/publish" class="tab-item"><i class="fas fa-plus-circle"></i><span>发微博</span></router-link>
+            <router-link to="/profile" class="tab-item"><i class="fas fa-user"></i><span>我的</span></router-link>
+          </nav>
+          
+          <!-- 悬浮发布按钮（移动端） -->
+          <button v-if="globalState.currentUser && $route.path !== '/publish'" class="publish-fab" @click="$router.push('/publish')">
+            <i class="fas fa-plus"></i>
+          </button>
+          
+          <div class="toast" :class="globalState.toast.type" v-if="globalState.toast.show">
+            {{ globalState.toast.message }}
+          </div>
+        </div>
+      `
+    };
+
+    // ==================== 首页组件 ====================
+    const HomeView = {
+      setup() {
+        const showToast = inject('showToast');
+        const globalState = inject('globalState');
+        const posts = ref([]);
+        const loading = ref(false);
+        const showCommentModal = ref(false);
+        const selectedPost = ref(null);
+
+        const fetchPosts = () => {
+          loading.value = true;
+          const allPosts = Storage.getPosts();
+          const users = Storage.getUsers();
+          const likes = Storage.getLikes();
+          
+          posts.value = allPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(post => {
+            const author = users.find(u => u.id === post.userId) || { username: '微博用户', id: 0 };
+            const liked = globalState.currentUser ? likes.some(l => l.postId === post.id && l.userId === globalState.currentUser.id) : false;
+            return { ...post, author, liked };
+          });
+          loading.value = false;
+        };
+
+        const handleLike = (post) => {
+          if (!globalState.currentUser) { showToast('请先登录微博', 'warning'); return; }
+          let likes = Storage.getLikes();
+          const likeIndex = likes.findIndex(l => l.postId === post.id && l.userId === globalState.currentUser.id);
+          
+          if (likeIndex > -1) {
+            likes.splice(likeIndex, 1);
+            post.likeCount--;
+            post.liked = false;
+            showToast('已取消点赞', 'info');
+          } else {
+            likes.push({ id: Date.now(), postId: post.id, userId: globalState.currentUser.id });
+            post.likeCount++;
+            post.liked = true;
+            showToast('点赞成功', 'success');
+          }
+          Storage.saveLikes(likes);
+          const allPosts = Storage.getPosts();
+          const postIndex = allPosts.findIndex(p => p.id === post.id);
+          if (postIndex > -1) { allPosts[postIndex].likeCount = post.likeCount; }
+          Storage.savePosts(allPosts);
+        };
+
+        const handleComment = (post) => {
+          selectedPost.value = post;
+          showCommentModal.value = true;
+        };
+
+        const handleDelete = (postId) => {
+          if (!confirm('确定删除这条微博吗？')) return;
+          let posts = Storage.getPosts();
+          posts = posts.filter(p => p.id !== postId);
+          Storage.savePosts(posts);
+          
+          // 同时删除相关评论和点赞
+          let comments = Storage.getComments();
+          comments = comments.filter(c => c.postId !== postId);
+          Storage.saveComments(comments);
+          
+          let likes = Storage.getLikes();
+          likes = likes.filter(l => l.postId !== postId);
+          Storage.saveLikes(likes);
+          
+          fetchPosts();
+          showToast('微博已删除', 'success');
+        };
+
+        onMounted(fetchPosts);
+
+        return { posts, loading, showCommentModal, selectedPost, fetchPosts, handleLike, handleComment, handleDelete };
+      },
+      components: {
+        PostCard: {
+          props: ['post'],
+          emits: ['like', 'comment', 'delete', 'repost'],
+          setup(props, { emit }) {
+            const globalState = inject('globalState');
+            const canDelete = computed(() => globalState.currentUser?.id === props.post.userId);
+            const formatTime = (ts) => {
+              const diff = Date.now() - new Date(ts).getTime();
+              if (diff < 60000) return '刚刚';
+              if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+              if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+              if (diff < 604800000) return Math.floor(diff/86400000) + '天前';
+              return new Date(ts).toLocaleDateString('zh-CN');
+            };
+            const avatarColor = ['#ff8200','#ff9a2e','#ff6b00','#ff3b30','#ff9500'][(props.post.userId || 0) % 5];
+            
+            // 提取话题标签
+            const contentWithTags = computed(() => {
+              return props.post.content.replace(/#(\w+)#/g, '<span style="color:#ff8200;font-weight:500">#$1#</span>');
+            });
+            
+            return { canDelete, formatTime, avatarColor, contentWithTags };
+          },
+          template: `
+            <article class="post-card card">
+              <header class="post-header">
+                <div class="post-author">
+                  <div class="avatar" :style="{ background: avatarColor }">
+                    {{ post.author?.username?.charAt(0)?.toUpperCase() || 'W' }}
+                  </div>
+                  <div>
+                    <h3 class="author-name">
+                      {{ post.author?.username || '微博用户' }}
+                      <span v-if="post.author?.id === 1" class="weibo-badge">认证</span>
+                    </h3>
+                    <time class="post-time">{{ formatTime(post.createdAt) }}</time>
+                  </div>
+                </div>
+                <button v-if="canDelete" style="background:none;border:none;color:#999;cursor:pointer;padding:8px" @click="$emit('delete', post.id)">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </header>
+              <div class="post-content">
+                <p class="content-text" v-html="contentWithTags"></p>
+                <div v-if="post.images?.length" class="post-images" :class="{ 'grid-1': post.images.length === 1, 'grid-2': post.images.length === 2 || post.images.length === 4 }">
+                  <img v-for="(img, i) in post.images.slice(0, 9)" :key="i" :src="img" alt="图片" />
+                </div>
+              </div>
+              <footer class="post-footer">
+                <button class="action-btn" :class="{ liked: post.liked }" @click="$emit('like', post)">
+                  <i :class="post.liked ? 'fas fa-heart' : 'far fa-heart'"></i>
+                  <span>{{ post.likeCount || 0 }}</span>
+                </button>
+                <button class="action-btn" @click="$emit('comment', post)">
+                  <i class="far fa-comment-dots"></i>
+                  <span>{{ post.commentCount || 0 }}</span>
+                </button>
+                <button class="action-btn" @click="$emit('repost', post)">
+                  <i class="fas fa-retweet"></i>
+                  <span>{{ post.repostCount || 0 }}</span>
+                </button>
+              </footer>
+            </article>
+          `
+        },
+        CommentModal: {
+          props: ['post'],
+          emits: ['close', 'comment-added'],
+          setup(props, { emit }) {
+            const showToast = inject('showToast');
+            const globalState = inject('globalState');
+            const comments = ref([]);
+            const newComment = ref('');
+            const submitting = ref(false);
+            
+            const fetchComments = () => {
+              const allComments = Storage.getComments();
+              const users = Storage.getUsers();
+              comments.value = allComments.filter(c => c.postId === props.post.id).map(c => ({
+                ...c, 
+                user: users.find(u => u.id === c.userId) || { username: '微博用户', id: 0 }
+              })).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+            };
+            
+            const submitComment = async () => {
+              if (!newComment.value.trim()) {
+                showToast('评论内容不能为空', 'warning');
+                return;
+              }
+              if (newComment.value.length > 200) {
+                showToast('评论不能超过200字', 'warning');
+                return;
+              }
+              
+              submitting.value = true;
+              
+              // 模拟网络延迟
+              await new Promise(resolve => setTimeout(resolve, 300));
+              
+              let allComments = Storage.getComments();
+              const newC = { 
+                id: Date.now(), 
+                postId: props.post.id, 
+                userId: globalState.currentUser.id, 
+                content: newComment.value.trim(), 
+                createdAt: new Date().toISOString() 
+              };
+              allComments.push(newC);
+              Storage.saveComments(allComments);
+              
+              let posts = Storage.getPosts();
+              const postIdx = posts.findIndex(p => p.id === props.post.id);
+              if (postIdx > -1) { 
+                posts[postIdx].commentCount++; 
+                Storage.savePosts(posts); 
+              }
+              
+              newComment.value = '';
+              fetchComments();
+              emit('comment-added', props.post.id);
+              showToast('评论成功', 'success');
+              submitting.value = false;
+            };
+            
+            onMounted(fetchComments);
+            
+            const formatTime = (ts) => {
+              const diff = Date.now() - new Date(ts).getTime();
+              if (diff < 60000) return '刚刚';
+              if (diff < 3600000) return Math.floor(diff/60000) + '分钟前';
+              if (diff < 86400000) return Math.floor(diff/3600000) + '小时前';
+              return new Date(ts).toLocaleDateString('zh-CN');
+            };
+            
+            const getAvatarColor = (id) => {
+              return ['#ff8200','#ff9a2e','#ff6b00','#ff3b30','#ff9500'][(id || 0) % 5];
+            };
+            
+            return { comments, newComment, submitting, submitComment, formatTime, getAvatarColor, globalState };
+          },
+          template: `
+            <div class="modal-overlay" @click.self="$emit('close')">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h3><i class="far fa-comment-dots" style="color:#ff8200;margin-right:8px"></i>微博评论</h3>
+                  <button style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:#999" @click="$emit('close')">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div style="background:#fff5eb;padding:12px 16px;border-radius:12px;margin-bottom:16px;border-left:3px solid #ff8200">
+                    <span style="color:#999;font-size:0.85rem">原微博：</span>
+                    <span style="color:#333">{{ post.content?.substring(0, 80) }}{{ post.content?.length > 80 ? '...' : '' }}</span>
+                  </div>
+                  
+                  <div v-if="comments.length === 0" style="text-align:center;color:#999;padding:30px">
+                    <i class="far fa-comment" style="font-size:2rem;opacity:0.3;margin-bottom:12px"></i>
+                    <p>还没有评论，快来抢沙发！</p>
+                  </div>
+                  
+                  <div v-for="c in comments" :key="c.id" style="display:flex;gap:12px;margin-bottom:18px">
+                    <div :style="{background: getAvatarColor(c.userId), width:'40px',height:'40px',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:'bold',flexShrink:0}">
+                      {{ c.user?.username?.charAt(0)?.toUpperCase() || 'W' }}
+                    </div>
+                    <div style="flex:1">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <strong style="color:#333">{{ c.user?.username }}</strong>
+                        <span v-if="c.user?.id === 1" class="weibo-badge">认证</span>
+                        <span style="color:#999;font-size:0.75rem">{{ formatTime(c.createdAt) }}</span>
+                      </div>
+                      <p style="color:#555;line-height:1.5;word-break:break-word">{{ c.content }}</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <input 
+                    class="comment-input" 
+                    v-model="newComment" 
+                    placeholder="说点什么..." 
+                    maxlength="200"
+                    @keyup.enter="submitComment"
+                    :disabled="submitting"
+                  />
+                  <button 
+                    class="send-btn" 
+                    @click="submitComment"
+                    :disabled="!newComment.trim() || submitting"
+                  >
+                    <i class="fas fa-paper-plane" v-if="!submitting"></i>
+                    <i class="fas fa-spinner fa-spin" v-else></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `
+        }
+      },
+      template: `
+        <div>
+          <div class="feed-header">
+            <h2><i class="fab fa-weibo" style="color:#ff8200;margin-right:6px"></i> 微博热搜</h2>
+            <button class="refresh-btn" @click="fetchPosts" :disabled="loading">
+              <i class="fas fa-sync-alt" :class="{ 'fa-spin': loading }"></i>
+            </button>
+          </div>
+          
+          <div v-if="loading && posts.length === 0" class="loading">
+            <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;margin-right:8px"></i>加载中...
+          </div>
+          
+          <div v-else-if="posts.length === 0" class="empty-state">
+            <i class="fab fa-weibo"></i>
+            <p>还没有微博，快来发布第一条吧！</p>
+          </div>
+          
+          <div v-else style="display:flex;flex-direction:column;gap:12px">
+            <PostCard 
+              v-for="post in posts" 
+              :key="post.id" 
+              :post="post" 
+              @like="handleLike" 
+              @comment="handleComment" 
+              @delete="handleDelete"
+              @repost="() => showToast('转发功能开发中', 'info')"
+            />
+          </div>
+          
+          <CommentModal 
+            v-if="showCommentModal" 
+            :post="selectedPost" 
+            @close="showCommentModal = false" 
+            @comment-added="(postId) => { const p = posts.find(x => x.id === postId); if(p) p.commentCount++; }" 
+          />
+        </div>
+      `
+    };
+
+    // ==================== 发布页面 ====================
+    const PublishView = {
+      setup() {
+        const showToast = inject('showToast');
+        const globalState = inject('globalState');
+        const router = VueRouter.useRouter();
+        const form = reactive({ content: '', images: [] });
+        const submitting = ref(false);
+        
+        const addImage = (e) => {
+          const files = Array.from(e.target.files);
+          if (form.images.length + files.length > 9) {
+            showToast('最多只能上传9张图片', 'warning');
+            return;
+          }
+          
+          files.forEach(file => {
+            if (file.size > 5 * 1024 * 1024) {
+              showToast('图片不能超过5MB', 'warning');
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = (ev) => { form.images.push(ev.target.result); };
+            reader.readAsDataURL(file);
+          });
+          e.target.value = '';
+        };
+        
+        const removeImage = (idx) => { form.images.splice(idx, 1); };
+        
+        const insertTag = (tag) => {
+          form.content += ` #${tag}# `;
+        };
+        
+        const handleSubmit = async () => {
+          if (!form.content.trim()) { 
+            showToast('微博内容不能为空', 'warning'); 
+            return; 
+          }
+          if (form.content.length > 2000) {
+            showToast('微博内容不能超过2000字', 'warning');
+            return;
+          }
+          
+          submitting.value = true;
+          showToast('发布中...', 'info');
+          
+          // 模拟网络延迟
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
+          let posts = Storage.getPosts();
+          const newPost = {
+            id: Date.now(),
+            userId: globalState.currentUser.id,
+            content: form.content.trim(),
+            images: [...form.images],
+            likeCount: 0,
+            commentCount: 0,
+            repostCount: 0,
+            createdAt: new Date().toISOString()
+          };
+          posts.push(newPost);
+          Storage.savePosts(posts);
+          
+          showToast('微博发布成功！', 'success');
+          router.push('/home');
+          submitting.value = false;
+        };
+        
+        return { form, submitting, addImage, removeImage, insertTag, handleSubmit };
+      },
+      template: `
+        <div class="card">
+          <h2 style="margin-bottom:20px;display:flex;align-items:center;gap:8px">
+            <i class="fab fa-weibo" style="color:#ff8200"></i> 
+            有什么新鲜事想告诉大家？
+          </h2>
+          <form @submit.prevent="handleSubmit">
+            <div class="form-group">
+              <textarea 
+                class="form-input" 
+                v-model="form.content" 
+                placeholder="分享新鲜事..." 
+                rows="6" 
+                maxlength="2000"
+              ></textarea>
+              <div style="display:flex;justify-content:space-between;margin-top:8px">
+                <div style="display:flex;gap:8px">
+                  <button type="button" style="background:none;border:none;color:#ff8200;cursor:pointer;font-size:0.85rem" @click="insertTag('今日热点')">
+                    #今日热点#
+                  </button>
+                  <button type="button" style="background:none;border:none;color:#ff8200;cursor:pointer;font-size:0.85rem" @click="insertTag('随手拍')">
+                    #随手拍#
+                  </button>
+                  <button type="button" style="background:none;border:none;color:#ff8200;cursor:pointer;font-size:0.85rem" @click="insertTag('心情')">
+                    #心情#
+                  </button>
+                </div>
+                <span :style="{color: form.content.length > 1800 ? '#ff3b30' : '#999',fontSize:'0.85rem'}">
+                  {{ form.content.length }}/2000
+                </span>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">
+                <i class="fas fa-image" style="color:#ff8200;margin-right:6px"></i>添加图片
+                <span style="color:#999;font-weight:400;margin-left:8px">(最多9张)</span>
+              </label>
+              <div class="image-preview-area">
+                <div v-for="(img, i) in form.images" :key="i" class="image-preview">
+                  <img :src="img" alt="预览" />
+                  <button type="button" class="remove-image" @click="removeImage(i)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <label v-if="form.images.length < 9" style="width:80px;height:80px;border:2px dashed #ddd;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#999;transition:all 0.3s">
+                  <input type="file" accept="image/*" multiple style="display:none" @change="addImage" />
+                  <i class="fas fa-plus"></i>
+                  <span style="font-size:0.7rem;margin-top:4px">上传</span>
+                </label>
+              </div>
+            </div>
+            
+            <div style="display:flex;gap:12px">
+              <button class="btn btn-primary" style="flex:1" :disabled="submitting || !form.content.trim()">
+                <i class="fab fa-weibo" style="margin-right:6px"></i>
+                {{ submitting ? '发布中...' : '发布微博' }}
+              </button>
+              <button type="button" class="btn btn-outline" @click="$router.push('/home')">
+                取消
+              </button>
+            </div>
+          </form>
+        </div>
+      `
+    };
+
+    // ==================== 登录页面 ====================
+    const LoginView = {
+      setup(props, { emit }) {
+        const showToast = inject('showToast');
+        const router = VueRouter.useRouter();
+        const mode = ref('login');
+        const loading = ref(false);
+        const loginForm = reactive({ username: '', password: '' });
+        const registerForm = reactive({ username: '', password: '', confirmPassword: '' });
+        
+        const handleLogin = async () => {
+          if (!loginForm.username || !loginForm.password) {
+            showToast('请输入用户名和密码', 'warning');
+            return;
+          }
+          
+          loading.value = true;
+          
+          // 模拟网络延迟
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          const users = Storage.getUsers();
+          const user = users.find(u => u.username === loginForm.username && u.password === loginForm.password);
+          
+          if (user) {
+            const { password, ...userInfo } = user;
+            login(userInfo, 'weibo-token-' + Date.now());
+            showToast('欢迎回来！', 'success');
+            router.push('/home');
+          } else {
+            showToast('用户名或密码错误', 'error');
+          }
+          loading.value = false;
+        };
+        
+        const handleRegister = async () => {
+          if (registerForm.username.length < 3 || registerForm.username.length > 20) {
+            showToast('用户名长度应为3-20个字符', 'warning');
+            return;
+          }
+          if (registerForm.password.length < 6) {
+            showToast('密码长度至少6个字符', 'warning');
+            return;
+          }
+          if (registerForm.password !== registerForm.confirmPassword) {
+            showToast('两次输入的密码不一致', 'warning');
+            return;
+          }
+          
+          loading.value = true;
+          
+          // 模拟网络延迟
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          let users = Storage.getUsers();
+          if (users.find(u => u.username === registerForm.username)) {
+            showToast('用户名已存在', 'error');
+            loading.value = false;
+            return;
+          }
+          
+          const newUser = { 
+            id: Date.now(), 
+            username: registerForm.username, 
+            password: registerForm.password, 
+            avatar: null,
+            bio: '微博新用户',
+            createdAt: new Date().toISOString() 
+          };
+          users.push(newUser);
+          Storage.saveUsers(users);
+          
+          showToast('注册成功，请登录', 'success');
+          mode.value = 'login';
+          loginForm.username = registerForm.username;
+          registerForm.username = registerForm.password = registerForm.confirmPassword = '';
+          loading.value = false;
+        };
+        
+        return { mode, loading, loginForm, registerForm, handleLogin, handleRegister };
+      },
+      template: `
+        <div class="login-view">
+          <div class="login-container">
+            <div class="login-header">
+              <i class="fab fa-weibo"></i>
+              <h1>微博</h1>
+              <p>随时随地 发现新鲜事</p>
+            </div>
+            <div class="card login-card">
+              <div class="tabs">
+                <button class="tab" :class="{ active: mode === 'login' }" @click="mode = 'login'">登录</button>
+                <button class="tab" :class="{ active: mode === 'register' }" @click="mode = 'register'">注册</button>
+              </div>
+              
+              <form v-if="mode === 'login'" @submit.prevent="handleLogin">
+                <div class="form-group">
+                  <label class="form-label"><i class="fas fa-user" style="margin-right:6px"></i>用户名</label>
+                  <input class="form-input" v-model="loginForm.username" placeholder="请输入用户名" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><i class="fas fa-lock" style="margin-right:6px"></i>密码</label>
+                  <input class="form-input" type="password" v-model="loginForm.password" placeholder="请输入密码" required />
+                </div>
+                <button class="btn btn-primary" style="width:100%" :disabled="loading">
+                  <i class="fab fa-weibo" style="margin-right:6px"></i>
+                  {{ loading ? '登录中...' : '登录微博' }}
+                </button>
+              </form>
+              
+              <form v-else @submit.prevent="handleRegister">
+                <div class="form-group">
+                  <label class="form-label">用户名</label>
+                  <input class="form-input" v-model="registerForm.username" placeholder="3-20个字符" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">密码</label>
+                  <input class="form-input" type="password" v-model="registerForm.password" placeholder="至少6个字符" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">确认密码</label>
+                  <input class="form-input" type="password" v-model="registerForm.confirmPassword" placeholder="再次输入密码" required />
+                </div>
+                <button class="btn btn-primary" style="width:100%" :disabled="loading">
+                  {{ loading ? '注册中...' : '注册微博账号' }}
+                </button>
+              </form>
+              
+              <div style="margin-top:24px;padding-top:20px;border-top:1px solid #f0f0f0;text-align:center;color:#999;font-size:0.85rem">
+                <p style="background:#fff5eb;padding:10px;border-radius:20px;color:#ff8200">
+                  <i class="fas fa-user-check" style="margin-right:6px"></i>
+                  测试账号: test / 123456
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // ==================== 个人主页 ====================
+    const ProfileView = {
+      setup() {
+        const showToast = inject('showToast');
+        const globalState = inject('globalState');
+        const userPosts = ref([]);
+        const loading = ref(false);
+        
+        const fetchUserPosts = () => {
+          loading.value = true;
+          const posts = Storage.getPosts();
+          const users = Storage.getUsers();
+          const likes = Storage.getLikes();
+          
+          userPosts.value = posts
+            .filter(p => p.userId === globalState.currentUser?.id)
+            .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .map(post => {
+              const author = users.find(u => u.id === post.userId) || { username: '微博用户' };
+              const liked = likes.some(l => l.postId === post.id && l.userId === globalState.currentUser.id);
+              return { ...post, author, liked };
+            });
+          loading.value = false;
+        };
+        
+        const totalLikes = computed(() => userPosts.value.reduce((sum, p) => sum + (p.likeCount || 0), 0));
+        const totalComments = computed(() => userPosts.value.reduce((sum, p) => sum + (p.commentCount || 0), 0));
+        const avatarColor = '#ff8200';
+        
+        const handleDeletePost = (postId) => {
+          if (!confirm('确定删除这条微博吗？')) return;
+          let posts = Storage.getPosts();
+          posts = posts.filter(p => p.id !== postId);
+          Storage.savePosts(posts);
+          fetchUserPosts();
+          showToast('微博已删除', 'success');
+        };
+        
+        onMounted(fetchUserPosts);
+        
+        return { globalState, userPosts, loading, totalLikes, totalComments, avatarColor, fetchUserPosts, handleDeletePost };
+      },
+      components: {
+        PostCard: HomeView.components.PostCard
+      },
+      template: `
+        <div>
+          <div class="card profile-header">
+            <div class="avatar-large" :style="{ background: avatarColor }">
+              {{ globalState.currentUser?.username?.charAt(0)?.toUpperCase() || 'W' }}
+            </div>
+            <h2 style="font-size:1.5rem;margin-bottom:4px">
+              {{ globalState.currentUser?.username }}
+              <span class="weibo-badge" style="margin-left:8px">认证用户</span>
+            </h2>
+            <p style="color:#999;margin-bottom:20px">微博ID: {{ globalState.currentUser?.id }}</p>
+            
+            <div class="profile-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ userPosts.length }}</span>
+                <span class="stat-label">微博</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ totalLikes }}</span>
+                <span class="stat-label">获赞</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{{ totalComments }}</span>
+                <span class="stat-label">评论</span>
+              </div>
+            </div>
+          </div>
+          
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px">
+            <h3 style="font-size:1.1rem;color:#333">
+              <i class="fab fa-weibo" style="color:#ff8200;margin-right:6px"></i>我的微博
+            </h3>
+            <button class="refresh-btn" @click="fetchUserPosts" style="width:32px;height:32px">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          
+          <div v-if="loading" class="loading">加载中...</div>
+          
+          <div v-else-if="userPosts.length === 0" class="empty-state">
+            <i class="fab fa-weibo"></i>
+            <p>还没有发布过微博</p>
+            <button class="btn btn-primary" style="margin-top:16px" @click="$router.push('/publish')">
+              <i class="fas fa-plus" style="margin-right:6px"></i>发布第一条微博
+            </button>
+          </div>
+          
+          <div v-else style="display:flex;flex-direction:column;gap:12px">
+            <PostCard 
+              v-for="post in userPosts" 
+              :key="post.id" 
+              :post="post" 
+              @delete="handleDeletePost"
+              @like="() => {}"
+              @comment="() => {}"
+            />
+          </div>
+        </div>
+      `
+    };
+
+    // ==================== 路由配置 ====================
+    const routes = [
+      { path: '/', redirect: '/home' },
+      { path: '/home', component: HomeView, name: 'home' },
+      { path: '/publish', component: PublishView, name: 'publish', meta: { requiresAuth: true } },
+      { path: '/profile', component: ProfileView, name: 'profile', meta: { requiresAuth: true } },
+      { path: '/login', component: LoginView, name: 'login' }
+    ];
+
+    const router = createRouter({ history: createWebHashHistory(), routes });
+
+    router.beforeEach((to, from, next) => {
+      const token = localStorage.getItem('weibo_token');
+      if (to.meta.requiresAuth && !token) {
+        showToast('请先登录微博', 'warning');
+        next('/login');
+      } else {
+        next();
+      }
+    });
+
+    // ==================== 启动应用 ====================
+    const app = createApp(App);
+    app.use(router);
+    app.mount('#app');
+  </script>
+</body>
+</html>
